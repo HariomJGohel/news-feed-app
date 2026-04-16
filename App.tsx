@@ -1,45 +1,52 @@
 /**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
+ * News Feed App — Entry point
  */
+import React, { useEffect } from 'react';
+import { StatusBar } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
-import { NewAppScreen } from '@react-native/new-app-screen';
-import { StatusBar, StyleSheet, useColorScheme, View } from 'react-native';
-import {
-  SafeAreaProvider,
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
+import RootNavigator from '@/navigation/RootNavigator';
+import { useBookmarksStore } from '@/features/bookmarks/store/bookmarksStore';
+import { ThemeProvider, useTheme } from '@/shared/theme';
+import AppAlert, { appAlertRef } from '@/shared/components/AppAlert';
+import OfflineBanner from '@/shared/components/OfflineBanner';
 
-function App() {
-  const isDarkMode = useColorScheme() === 'dark';
+function AppContent(): React.ReactElement {
+  const hydrateFromStorage = useBookmarksStore(state => state.hydrateFromStorage);
+  const { colors, theme } = useTheme();
+
+  // Hydrate persisted bookmarks once on cold start — not inside the hook
+  // to avoid re-reading AsyncStorage on every component that calls useBookmarks.
+  useEffect(() => {
+    hydrateFromStorage();
+  }, [hydrateFromStorage]);
 
   return (
     <SafeAreaProvider>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <AppContent />
+      <StatusBar
+        barStyle={theme === 'dark' ? 'light-content' : 'dark-content'}
+        backgroundColor={colors.surface}
+        translucent={false}
+      />
+      <NavigationContainer>
+        <RootNavigator />
+      </NavigationContainer>
+      <OfflineBanner />
+      <AppAlert />
     </SafeAreaProvider>
   );
 }
 
-function AppContent() {
-  const safeAreaInsets = useSafeAreaInsets();
-
+function App(): React.ReactElement {
   return (
-    <View style={styles.container}>
-      <NewAppScreen
-        templateFileName="App.tsx"
-        safeAreaInsets={safeAreaInsets}
-      />
-    </View>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ThemeProvider>
+        <AppContent />
+      </ThemeProvider>
+    </GestureHandlerRootView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-});
 
 export default App;
