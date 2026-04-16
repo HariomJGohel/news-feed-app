@@ -1,5 +1,9 @@
 # NewsFeedApp — Pre-Interview Technical Assessment
 
+**Candidate:** Hariom Gohel
+**Email:** hariomjg@gmail.com
+**Phone:** +91 94094 06950
+
 A production-quality React Native news feed application built with the [Hacker News Firebase API](https://hacker-news.firebaseio.com/v0/).
 
 ---
@@ -85,9 +89,22 @@ All code owned by a feature lives under `features/<name>/`. Shared code that gen
 | Swipeable Bookmarks          | Added `react-native-gesture-handler` to implement a natural swipe-to-delete interaction for bookmarked articles, delivering a premium UX. 
 | Zustand over RTK             | Less DevTools integration; would switch for a larger team or when RTK Query's cache invalidation logic is needed. 
 
+
 ### What I Would Do Differently Given More Time
 
-If given more time, I would completely forgo `FlatList` and integrate Shopify's `@shopify/flash-list`. Our current dynamic layout constraints forced the removal of `getItemLayout` to ensure the interface looked premium, but `flash-list` natively supports dynamic cell recycling without needing absolute height constraints, which would guarantee 60fps performance even for thousands of dynamic items. Additionally, I would refactor the manual `Promise.all` fetching architecture and migrate entirely to React Query or RTK Query. Building manual error handling, deduplication, and caching logic for async server states is prone to edge-case bugs, whereas a robust query library handles the offline-first stale-while-revalidate lifecycle flawlessly right out of the box. Finally, I would implement an E2E test suite using Maestro to guarantee that navigating between the live feed and the offline bookmarks cache remains perfectly synced during aggressive user interaction.
+There are several things I would approach differently given more time, and I would be happy to walk through any of them in depth during the technical interview.
+
+**Performance — `@shopify/flash-list` over `FlatList`:** The current implementation dropped `getItemLayout` intentionally to support dynamic card heights and avoid awkward whitespace. The correct long-term fix is `flash-list`, which uses its own cell recycler and handles variable-height items natively. I opted not to add it here to keep the dependency surface minimal, but on a production feed with hundreds of items it would be the first thing I'd swap in.
+
+**Animation — `react-native-reanimated` for swipe gestures:** The swipe-to-delete on the Bookmarks screen currently uses the `Animated` API via `react-native-gesture-handler`'s `Swipeable` which is deprecated. I would migrate this to `react-native-reanimated` + `ReanimatedSwipeable` (the reanimated-backed version now shipped in gesture-handler v2+). Reanimated runs entirely on the UI thread, so the swipe would feel significantly smoother — no JS thread drops during fast gesture input.
+
+**Server state — React Query or RTK Query:** The current `Promise.all` fetch flow with manual error tracking and stale-check logic is functional but fragile. A dedicated query library would handle deduplication, background refetching, cache invalidation, and optimistic updates automatically, and would make the offline-first caching strategy (stale-while-revalidate) far more reliable with far less custom code.
+
+**Internationalisation — `i18next` + `react-i18next`:** All user-facing strings are already centralised in `src/shared/constants/Strings.ts`, which was designed as the base translation object. The next step would be replacing the static `Strings` object with `i18next` namespace lookups, adding an `en.json` translation file, and wiring `react-i18next`'s `useTranslation` hook into every component. Because all strings are already in one place, this migration would be mechanical with no component-level changes.
+
+**User preferences — Profile/Settings tab:** Currently the app follows the device's system theme automatically. A proper settings screen would give users explicit control: manually select Light or Dark mode, choose app language from the supported list, and manage account preferences. This tab would live alongside Feed and Bookmarks in the bottom navigator, with preferences persisted to AsyncStorage or MMKV so choices survive cold restarts.
+
+**Testing — Maestro E2E suite:** I would add flow-level tests covering the full user journey: launch → fetch feed → bookmark an article → kill the app → relaunch → verify bookmark persists → swipe to delete → verify removal. Maestro's YAML-driven approach is far faster to write than Detox for this class of interaction tests.
 
 ---
 
